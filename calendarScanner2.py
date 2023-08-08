@@ -17,7 +17,6 @@ Calendar formats:
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-##Write a good line-merging program
 
 
 # returns dictionary with keys beign dates in dd/mm/yyyy format and values being lists of pairs where each pair is (24-hour time, description of activitylll)
@@ -158,13 +157,13 @@ for y_lines in (grouped_vertical_lines+grouped_horizontal_lines):
         
 #image preprocessing for pytesseract    
 thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
-blur2 = cv2.GaussianBlur(thresh1, (3,3), 0)
+#blur2 = cv2.GaussianBlur(thresh1, (3,3), 0)
 
         
 daysrow = -1
 day_to_coord = {}
 for i in range(len(grouped_horizontal_lines)-1):
-    d = pytesseract.image_to_data(blur2[grouped_horizontal_lines[i][0]:grouped_horizontal_lines[i+1][0], grouped_vertical_lines[0][0]:grouped_vertical_lines[-1][0]], output_type=Output.DICT)
+    d = pytesseract.image_to_data(thresh1[grouped_horizontal_lines[i][0]:grouped_horizontal_lines[i+1][0], grouped_vertical_lines[0][0]:grouped_vertical_lines[-1][0]], output_type=Output.DICT)
     n_boxes = len(d['text'])
 
     for k in range(n_boxes):
@@ -182,6 +181,8 @@ for i in range(len(grouped_horizontal_lines)-1):
         break
 
 assert(daysrow != -1)
+
+##separate finding times into two cases: with - meaning two times and without - meaning one time
     
 times_to_coord = {}
 timecol = -1
@@ -346,7 +347,7 @@ for time in row_to_time.values():
 # =============================================================================
     
 
-cv2.imwrite('img.png', blur2)
+cv2.imwrite('img.png', img)
 cv2.waitKey(0)
 
 
