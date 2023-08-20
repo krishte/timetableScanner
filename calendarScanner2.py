@@ -157,16 +157,21 @@ def timetableScanner(img):
             cv2.line(img,(x1,y1),(x2,y2),(0,255,0),3)
             
     #image preprocessing for pytesseract    
-    thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
-    #blur2 = cv2.GaussianBlur(thresh1, (3,3), 0)
+    #thresh1=thresh
+    #thresh1 = cv2.adaptiveThreshold(blur, 255, 1, 1, 7, 2)
+    thresh1 = cv2.threshold(blur, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
+    blur1 = cv2.GaussianBlur(thresh1, (3,3), 0)
     
             
     daysrow = -1
     day_to_coord = {}
     for i in range(len(grouped_horizontal_lines)-1):
-        d = pytesseract.image_to_data(thresh1[grouped_horizontal_lines[i][0]:grouped_horizontal_lines[i+1][0], grouped_vertical_lines[0][0]:grouped_vertical_lines[-1][0]], output_type=Output.DICT)
+        #psm 11,12 work as well but detect the line in between days as a | character
+        d = pytesseract.image_to_data(blur1[grouped_horizontal_lines[i][0]:grouped_horizontal_lines[i+1][0], grouped_vertical_lines[0][0]:grouped_vertical_lines[-1][0]], output_type=Output.DICT,  config='--psm 7')
+        #cv2.imshow(str(i), blur1[grouped_horizontal_lines[i][0]:grouped_horizontal_lines[i+1][0], grouped_vertical_lines[0][0]:grouped_vertical_lines[-1][0]])
         n_boxes = len(d['text'])
-    
+        #print("days", d['text'])
+        #print("days", d['conf'])
         for k in range(n_boxes):
             if int(d['conf'][k]) >= 0 and d['text'][k].strip() != "":
                 (x, y, w, h) = (d['left'][k], d['top'][k], d['width'][k], d['height'][k])
@@ -182,11 +187,91 @@ def timetableScanner(img):
             break
     
     assert(daysrow != -1)
+    #print(day_to_coord)
     
-    #timescol = -1
-    #for i in range(len(grouped_vertical_lines)-1):
-        
+    timescol = -1
+    times_col_boxes = []
+    for i in range(len(grouped_vertical_lines)-1):
+        start_vert_line = grouped_vertical_lines[i][0]
+        end_vert_line = grouped_vertical_lines[i+1][0]
+        intersecting_horizontal_lines = [grouped_horizontal_lines[daysrow+1][0]]
+        for group in grouped_horizontal_lines[daysrow+2:]:
+            for line in group[1:]:
+                if (start_vert_line >= line[0][0]-25 and end_vert_line <= line[1][0]+25):
+                    intersecting_horizontal_lines.append(group[0])
+                    break
+  #      print(intersecting_horizontal_lines)
+        for j in range(len(intersecting_horizontal_lines)-1):
+            horizontal_midpoint = (intersecting_horizontal_lines[j]+intersecting_horizontal_lines[j+1])/2
+            vert_line_index = -1
+            for k in range(i+1, len(grouped_vertical_lines)):
+                for line in grouped_vertical_lines[k][1:]:
+                    if (horizontal_midpoint >= line[0][1] and horizontal_midpoint <= line[1][1]):
+                        vert_line_index = k
+                        break
+                if (vert_line_index != -1):
+                    break
+ #           print(j, vert_line_index)
+       
+                
+            thresh2 = cv2.threshold(gray[intersecting_horizontal_lines[j]:intersecting_horizontal_lines[j+1], grouped_vertical_lines[i][0]:grouped_vertical_lines[vert_line_index][0]], 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
+            blur2 = cv2.GaussianBlur(thresh2, (3,3), 0)
+            #cv2.imshow(str(j), gray[intersecting_horizontal_lines[j]:intersecting_horizontal_lines[j+1], grouped_vertical_lines[i][0]:(grouped_vertical_lines[i+1][0] if vert_line_found else grouped_vertical_lines[-1][0])])
+
+            d = pytesseract.image_to_data(blur2, output_type=Output.DICT, config='--psm 6')
+            n_boxes = len(d['text'])
+           # print(j, d['text'])
+            for k in range(n_boxes):
+                if (int(d['conf'][k]) >= 0 and d['text'][k].strip() != ""):
+                    (x, y, w, h) = (d['left'][k], d['top'][k], d['width'][k], d['height'][k])
+                    text = d['text'][k].strip()
+                    times_col_boxes.append([text, [y+intersecting_horizontal_lines[j],y+h+intersecting_horizontal_lines[j]] ])
+                    if (re.findall(r'\d+', text) != []):
+                        timescol = i
+                    img = cv2.rectangle(img, (x+grouped_vertical_lines[i][0],y+intersecting_horizontal_lines[j]), (x+w+grouped_vertical_lines[i][0],y+h+intersecting_horizontal_lines[j]), (0, 0, 255), 2)
+        if timescol != -1:
+            break
+                #re.findall(r'\b\d+[:.]\d\d', text)
+    #print(times_col_boxes)
+    times_col_grouped_boxes = [times_col_boxes[0]]
+    for (text, (y1,y2)) in times_col_boxes[1:]:
+        if (abs(y2-times_col_grouped_boxes[-1][1][1]) <= 10):
+            times_col_grouped_boxes[-1][0] += " " + text
+            times_col_grouped_boxes[-1][1][0] = min(y1, times_col_grouped_boxes[-1][1][0])
+            times_col_grouped_boxes[-1][1][1] = max(y2, times_col_grouped_boxes[-1][1][1])
+        else:
+            times_col_grouped_boxes.append([text, [y1,y2]])
+    print(times_col_grouped_boxes)
+    y_diffs = []
+    for i in range(len(times_col_grouped_boxes)-1):
+        y_diffs.append(abs(times_col_grouped_boxes[i][1][1]-times_col_grouped_boxes[i+1][1][0]))
+    y_diffs.sort()
+    vert_sep_threshold = y_diffs[0]
+    for val in y_diffs[1:]:
+        if (val-vert_sep_threshold <= 5):
+            vert_sep_threshold = val
+    #print(y_diffs)
+    times = []
+    if max(y_diffs) == vert_sep_threshold:
+        times = times_col_grouped_boxes
+    else:
+        times = [times_col_grouped_boxes[0]]
+        for (text, (y1,y2)) in times_col_grouped_boxes[1:]:
+            if (abs(y1-times[-1][1][1]) <= vert_sep_threshold):
+                times[-1][0] += " " + text
+                times[-1][1][1] = y2
+            else:
+                times.append([text, [y1,y2]])
+    print(times)
     
+    #Need to extract actual times for times array using regex matching and doing case analysis on one or two times present
+    
+    # boxes = []
+    # for i in range(daysrow, len(grouped_horizontal_lines)):
+    #     for j in range(i+1, len(grouped_horizontal_lines)):
+    #         for k in range(timescol, len(grouped_vertical_lines)):
+    #             for l in range(k+1, len(grouped_vertical_lines)):
+                    
 #Text detection using EAST: finds bounding boxes on all words but not accurate enough
 # =============================================================================
 #     colored_blur = cv2.GaussianBlur(img, (3,3), 0)
@@ -257,20 +342,8 @@ def timetableScanner(img):
 # =============================================================================
     
 
-    return (img, gray, blur, thresh)
+    return (img, gray, blur, thresh1)
 
-
-#Need to add additional code for vertical lines that don't extend over 1/2 the image size e.g. timetable2.jpg
-
-#Display condensed lines on image
-# =============================================================================
-# for line in condensed_vertical_lines:
-#     [[x1,y1],[x2,y2]] = line
-#     cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
-# for line in condensed_horizontal_lines:
-#     [[x1,y1],[x2,y2]] = line
-#     cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
-# =============================================================================
 
 
 #Assumes startdate and enddate have times of 00:00 and exist
@@ -305,11 +378,11 @@ def timetableScanner(img):
 # 
 # =============================================================================
 
-for imgname in images:
+for imgname in images[2:3]:
     img = cv2.imread(imgname)
     imgnew = timetableScanner(img)[0]
-    imS = cv2.resize(imgnew, (int(800/img.shape[0]*img.shape[1]), 800))  
-    cv2.imshow(imgname, imS)
+   # imS = cv2.resize(imgnew, (int(800/img.shape[0]*img.shape[1]), 800))  
+    cv2.imwrite("img.png", imgnew)
 
 cv2.waitKey(0)
 
