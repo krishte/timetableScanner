@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LuEdit2 } from 'react-icons/lu';
 import {BsCheckCircle, BsCheckCircleFill} from 'react-icons/bs';
 import {GiArrowCursor} from 'react-icons/gi'
@@ -12,8 +12,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Image from 'react-bootstrap/Image';
-import Popover from 'react-bootstrap/Popover';
-import Container from 'react-bootstrap/Container';
+
 
 
 
@@ -27,13 +26,13 @@ function TimetableEdit(props) {
 //   const [days, setDays] = useState([['Tuesday'], ['Wednesday'], ['Thursday'], ['Thursday'], ['Friday'], ['Friday'], ['Monday'], ['Tuesday'], ['Wednesday'], ['Thursday'], ['Thursday'], ['Friday'], ['Friday'], ['Monday'], ['Thursday'], ['Monday'], ['Tuesday'], ['Wednesday'], ['Friday'], ['Tuesday'], ['Wednesday'], ['Wednesday'], ['Friday'], ['Monday'], ['Tuesday'], ['Wednesday'], ['Thursday'], ['Thursday'], ['Friday'], ['Tuesday'], ['Monday'], ['Monday'], ['Monday'], ['Tuesday'], ['Tuesday'], ['Thursday'], ['Friday'], ['Friday'], ['Friday'], ['Monday'], ['Tuesday'], ['Wednesday'], ['Thursday'], ['Tuesday'], ['Tuesday'], ['Friday'], ['Wednesday'], ['Tuesday'], ['Monday'], ['Tuesday'], ['Tuesday'], ['Wednesday'], ['Thursday'], ['Thursday'], ['Friday'], ['Thursday'], ['Monday'], ['Tuesday']]);
 //   const [weeks, setWeeks] = useState([[], [384], [], [], [1, 2, 3, 4], [], [], [1, 2, 3], [], [], [2, 3, 4, 5], [], [1, 2, 3], [], [], [], [], [], [], [], [], [], [], [], [], [8, 5, 6, 7], [], [], [], [8, 2, 4, 6], [], [], [], [], [], [], [], [], [8, 2, 4, 6], [], [], [], [], [], [], [2, 3, 4, 5], [1, 2, 3, 4], [], [], [], [], [], [], [], [], [1, 2, 3, 4], [], []]);
     
-    const [croppedPos, setCroppedPos] = useState(props.croppedPos);
-    const [backgroundImg, setBackgroundImg] = useState(props.backgroundImg)
-    const [croppedURLs, setCroppedURLs] = useState(props.croppedURLs)
-    const [timeCroppedURLs, setTimeCroppedURLs] = useState(props.timeCroppedURLs);
-    const [horizontalLines, setHorizontalLines] = useState(props.horizontalLines);
+    const [croppedPos, ] = useState(props.croppedPos);
+    const [backgroundImg, ] = useState(props.backgroundImg)
+    const [croppedURLs, ] = useState(props.croppedURLs)
+    const [timeCroppedURLs, ] = useState(props.timeCroppedURLs);
+    const [horizontalLines, ] = useState(props.horizontalLines);
     const [timeBoxes, setTimeBoxes] = useState(props.timeBoxes)
-    const [events, setEvents] = useState(props.events)
+    const [events, ] = useState(props.events)
     
 
     const [summaries, setSummaries] = useState(null);
@@ -68,13 +67,13 @@ function TimetableEdit(props) {
 
   const handleEditTimeClick = (index) => {
     const editTimes = timeBoxes[index][0].split('-')
-    if (editTimes[0].length==4) {
+    if (editTimes[0].length===4) {
       setModalFirstTime("0" + editTimes[0])
     }
     else {
       setModalFirstTime(editTimes[0]);
     }
-    if (editTimes[1].length==4) {
+    if (editTimes[1].length===4) {
       setModalSecondTime("0" + editTimes[1])
     }
     else {
@@ -87,13 +86,13 @@ function TimetableEdit(props) {
   const handleEditClick = (index) => {
     const editTimes = times[index].split('-')
     setModalSummary(summaries[index]);
-    if (editTimes[0].length==4) {
+    if (editTimes[0].length===4) {
       setModalFirstTime("0" + editTimes[0])
     }
     else {
       setModalFirstTime(editTimes[0]);
     }
-    if (editTimes[1].length==4) {
+    if (editTimes[1].length===4) {
       setModalSecondTime("0" + editTimes[1])
     }
     else {
@@ -113,7 +112,7 @@ function TimetableEdit(props) {
     if (parseInt(time1.substring(0,2)) > parseInt(time2.substring(0,2))) {
       return false;
     }
-    else if (parseInt(time1.substring(0,2)) == parseInt(time2.substring(0,2)) && parseInt(time1.substring(3,5)) >= parseInt(time2.substring(3,5))) {
+    else if (parseInt(time1.substring(0,2)) === parseInt(time2.substring(0,2)) && parseInt(time1.substring(3,5)) >= parseInt(time2.substring(3,5))) {
       return false;
     }
     return true;
@@ -143,7 +142,7 @@ function TimetableEdit(props) {
     updatedDays[editIndex] = modalDays;
     updatedSummaries[editIndex] = modalSummary
     updatedTimes[editIndex] = modalFirstTime+"-"+modalSecondTime
-    if (modalWeeks=="") {
+    if (modalWeeks==="") {
       updatedWeeks[editIndex] = []
     }
     else {
@@ -409,17 +408,17 @@ function TimetableEdit(props) {
         </Modal.Header>
           <Form.Group as={Col} style={{padding:"15px"}} controlId="Google Calendar">
             <h5>Goole Calendar</h5>
-            <p>Click on Settings then Import & Export. Then upload the ics file to your chosen calendar.</p>
+            <a href="https://support.google.com/calendar/thread/3231927/how-do-i-import-ics-files-into-google-calendar?hl=en" target="_blank">Instructions</a>
           </Form.Group>
 
           <Form.Group as={Col} style={{padding:"15px"}} controlId="Apple Calendar">
             <h5>Apple Calendar</h5>
-            <p>blah blah blah</p>
+            <a href="https://www.lifewire.com/how-to-import-ics-calendar-files-in-ical-1172177#:~:text=Like%20Google%20Calendar%2C%20Apple%20Calendar,ICS%20file%20and%20click%20Import." target="_blank">Instructions</a>
           </Form.Group>
 
           <Form.Group as={Col} style={{padding:"15px"}} controlId="Outlook Calendar">
             <h5>Outlook Calendar</h5>
-            <p>blah blah blah</p>
+            <a href="https://support.microsoft.com/en-us/office/import-calendars-into-outlook-8e8364e1-400e-4c0f-a573-fe76b5a2d379" target="_blank">Instructions</a>
           </Form.Group>
 
         <Modal.Footer>
@@ -430,7 +429,7 @@ function TimetableEdit(props) {
       </Modal>
     );
   }
-  else if (editStage==2) {
+  else if (editStage===2) {
     modalContent = (
       <Modal show={show} onHide={handleEditCancel}>
         <Modal.Header closeButton>
@@ -474,7 +473,7 @@ function TimetableEdit(props) {
               return (
                 <Button 
                   key={index.toString() + "editdaybutton"} 
-                  variant={modalDays==null ? "secondary" : (modalDays.includes(item) ? "primary" : "secondary")}
+                  variant={modalDays===null ? "secondary" : (modalDays.includes(item) ? "primary" : "secondary")}
                   onClick={() => handleEditDayClick(index)}
                 >
                   {item.substring(0,1)} 
@@ -547,7 +546,7 @@ function TimetableEdit(props) {
   }
 
   let currentCrop;
-  if (editStage==1) {
+  if (editStage===1) {
     currentCrop = cropped_time_list;
   }
   else {
@@ -555,7 +554,7 @@ function TimetableEdit(props) {
   }
 
   let changeButton;
-  if (editStage==1) {
+  if (editStage===1) {
     changeButton = (
       <Button style={{position:'fixed', bottom: "50px", right: "50px", zIndex:3}} onClick={handleNextClick}>
           Next

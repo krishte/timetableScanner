@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import TimetableEdit from './TimetableEdit';
 import Form from 'react-bootstrap/Form';
 import Container from 'react-bootstrap/Container';

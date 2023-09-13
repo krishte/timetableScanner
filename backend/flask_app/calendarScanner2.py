@@ -6,7 +6,6 @@ import re
 from datetime import timedelta, datetime
 from icalendar import Calendar, Event
 import Levenshtein
-from imutils.object_detection import non_max_suppression
 from flask import Flask, jsonify, request, send_file, Response
 from flask_cors import CORS
 import io
