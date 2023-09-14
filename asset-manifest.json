@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/timetableScanner/static/css/main.759e5115.css",
-    "main.js": "/timetableScanner/static/js/main.dcd6377c.js",
+    "main.js": "/timetableScanner/static/js/main.e4161efb.js",
     "static/js/787.e1129669.chunk.js": "/timetableScanner/static/js/787.e1129669.chunk.js",
     "index.html": "/timetableScanner/index.html",
     "main.759e5115.css.map": "/timetableScanner/static/css/main.759e5115.css.map",
-    "main.dcd6377c.js.map": "/timetableScanner/static/js/main.dcd6377c.js.map",
+    "main.e4161efb.js.map": "/timetableScanner/static/js/main.e4161efb.js.map",
     "787.e1129669.chunk.js.map": "/timetableScanner/static/js/787.e1129669.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.759e5115.css",
-    "static/js/main.dcd6377c.js"
+    "static/js/main.e4161efb.js"
   ]
 }
