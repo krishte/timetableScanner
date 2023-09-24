@@ -219,29 +219,45 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
     timescol = -1
     times_col_boxes = []
     for i in range(0, len(grouped_vertical_lines)-1):
+        times_col_boxes = []
         start_vert_line = grouped_vertical_lines[i][0]
         end_vert_line = grouped_vertical_lines[i+1][0]
         intersecting_horizontal_lines = [
             grouped_horizontal_lines[daysrow+1][0]]
         for group in grouped_horizontal_lines[daysrow+2:]:
+            if (group[0] > CONST_LINE_SEPARATION + grouped_vertical_lines[i][-1][1][1]):
+                break
             for line in group[1:]:
                 if (start_vert_line >= line[0][0]-CONST_OVERLAP_THRESHOLD
                         and end_vert_line <= line[1][0]+CONST_OVERLAP_THRESHOLD):
                     intersecting_horizontal_lines.append(group[0])
                     break
-  #      print(intersecting_horizontal_lines)
+        print(intersecting_horizontal_lines)
+        for line in grouped_vertical_lines[i+1][1:]:
+            if (line[0][1] >= grouped_horizontal_lines[daysrow+1][0]):
+                intersecting_horizontal_lines.append(line[0][1])
+            if (line[1][1] >= grouped_horizontal_lines[daysrow+1][0]):
+                intersecting_horizontal_lines.append(line[1][1])
+        intersecting_horizontal_lines.sort()
+        new_intersecting_horizontal_lines = intersecting_horizontal_lines[0:1]
+        for val in intersecting_horizontal_lines[1:]:
+            if (abs(val-new_intersecting_horizontal_lines[-1]) > CONST_LINE_SEPARATION):
+                new_intersecting_horizontal_lines.append(val)
+        intersecting_horizontal_lines = new_intersecting_horizontal_lines
+        print(grouped_horizontal_lines[daysrow+1][0], intersecting_horizontal_lines)
         for j in range(len(intersecting_horizontal_lines)-1):
-            # horizontal_midpoint = (intersecting_horizontal_lines[j]+intersecting_horizontal_lines[j+1])/2
-            # vert_line_index = -1
-            # for k in range(i+1, len(grouped_vertical_lines)):
-            #     for line in grouped_vertical_lines[k][1:]:
-            #         if (horizontal_midpoint >= line[0][1] and horizontal_midpoint <= line[1][1]):
-            #             vert_line_index = k
-            #             break
-            #     if (vert_line_index != -1):
-            #         break
-            vert_line_index = i+1
- #           print(j, vert_line_index)
+            horizontal_midpoint = (intersecting_horizontal_lines[j]+intersecting_horizontal_lines[j+1])/2
+            vert_line_index = -1
+            for k in range(i+1, len(grouped_vertical_lines)):
+                for line in grouped_vertical_lines[k][1:]:
+                    if (horizontal_midpoint >= line[0][1] and horizontal_midpoint <= line[1][1]):
+                        vert_line_index = k
+                        break
+                if (vert_line_index != -1):
+                    break
+            print(j, vert_line_index)
+            if (vert_line_index==-1):
+                vert_line_index = i+1          
 
             thresh2 = cv2.threshold(gray[intersecting_horizontal_lines[j]:intersecting_horizontal_lines[j+1], grouped_vertical_lines[i]
                                     [0]:grouped_vertical_lines[vert_line_index][0]], 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
@@ -263,6 +279,7 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
                     #img = cv2.rectangle(img, (x+grouped_vertical_lines[i][0],y+intersecting_horizontal_lines[j]), (x+w+grouped_vertical_lines[i][0],y+h+intersecting_horizontal_lines[j]), (0, 0, 255), 2)
         if timescol != -1:
             break
+    print(times_col_boxes)
     return (timescol, times_col_boxes)
 
 
@@ -311,7 +328,7 @@ def process_times(times_col_boxes, grouped_horizontal_lines, grouped_vertical_li
             times[-1][1][1] = y2
         else:
             times.append([text, [y1, y2]])
-
+    print(times)
     return times
 
 
@@ -322,6 +339,7 @@ def parse_times(times):
         num_times = re.findall(
             r'\b\d+[:.,;]?\d+\s?\w*\s?[-]\s?\d+[:.,;]?\d+', times[i][0])
         num_single_time = re.findall(r'\b\d+[:.,;]?\d+', times[i][0])
+        print(i, num_times, num_single_time)
         if len(num_times) == 1 or len(num_single_time) == 2:
             two_times = []
             if (len(num_times) == 1):
@@ -365,10 +383,8 @@ def parse_times(times):
             times[i][0] = ("Empty", "Empty")
             # This case should never be reached in the end
             #raise Exception("No time in box " + str(i))
-
-    return times
-
-    # print(times)
+        
+        
     # Deal with the one time cases
 
     def time_dif_mins(timepair):
@@ -396,6 +412,27 @@ def parse_times(times):
     if times[-1][0][1] == "Empty" and times[-1][0][0] != "Empty":
         times[-1][0] = (times[-1][0][0],
                         addMins(last_time_dif, times[-1][0][0]))
+        
+    print(times)
+    #returns whether time1 is smaller than time2
+    def is_time_smaller(time1, time2):
+        [h1,m1] = time1.split(':')
+        [h2,m2] = time2.split(':')
+        if (h1==h2):
+            return int(m1) < int(m2)
+        return int(h1) < int(h2)
+        
+    #flag times that start before the previous time ends or where the second time occurs before the first
+    error_times = []
+    for i in range(len(times)):
+        if (times[i][0][0] == "Empty" or times[i][0][1] == "Empty"):
+            error_times.append(True)
+        elif (i > 0 and is_time_smaller(times[i][0][0], times[i-1][0][1])) or is_time_smaller(times[i][0][1], times[i][0][0]):
+            error_times.append(True)
+        else:
+            error_times.append(False)
+        
+    return times, error_times
 
 
 def find_day_cols(day_to_coord, grouped_vertical_lines, timescol, find_closest_line):
@@ -617,7 +654,8 @@ def process_timetable():
 
     times = process_times(times_col_boxes, grouped_horizontal_lines,
                           grouped_vertical_lines, timescol, find_closest_line, not_gibberish)
-    times = parse_times(times)
+    times, error_times = parse_times(times)
+    print(error_times)
 
     day_to_col = find_day_cols(
         day_to_coord, grouped_vertical_lines, timescol, find_closest_line)
@@ -653,7 +691,7 @@ def process_timetable():
     horizontal_lines = [int(scalefactor*x[0])
                         for x in grouped_horizontal_lines]
     response = jsonify(success=True, horizontalLines=horizontal_lines, timeBoxes=time_boxes,
-                       croppedWidth=cropped_width, cropped_pos=web_boxes, events=events)
+                       croppedWidth=cropped_width, cropped_pos=web_boxes, events=events, errorTimes=error_times)
 
     return response
 
@@ -787,9 +825,8 @@ def create_calendar_file():
         mimetype='text/calendar'
     )
 
-
-app.run(host='0.0.0.0', port=5001, debug=True)
-
+if __name__=="__main__":
+       app.run(host='0.0.0.0', port=5000, debug=True)
 
 # Text detection using EAST: finds bounding boxes on all words but not accurate enough
 # =============================================================================

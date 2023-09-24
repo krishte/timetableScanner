@@ -1,7 +1,8 @@
 {
   "name": "calendar-interface",
   "version": "0.1.0",
-  "homepage": "https://krishte.github.io/timetableScanner",
+  "homepage": ".",
+  "main": "index.js",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -9,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "bootstrap": "^5.3.1",
     "react": "^18.2.0",
+    "react-18-image-lightbox": "^5.1.4",
     "react-bootstrap": "^2.8.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.10.1",

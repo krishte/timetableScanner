@@ -33,6 +33,7 @@ function TimetableEdit(props) {
     const [horizontalLines, ] = useState(props.horizontalLines);
     const [timeBoxes, setTimeBoxes] = useState(props.timeBoxes)
     const [events, ] = useState(props.events)
+    const [errorTimes, setErrorTimes] = useState(props.errorTimes)
     
 
     const [summaries, setSummaries] = useState(null);
@@ -41,7 +42,7 @@ function TimetableEdit(props) {
     const [weeks, setWeeks] = useState(null);
   
   const daysofweek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-  const [boxSelection, setBoxSelection] = useState(new Array(1000).fill(false));
+  const [boxSelection, setBoxSelection] = useState(new Array(croppedPos.length).fill(false));
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const [show, setShow] = useState(true);
@@ -56,6 +57,7 @@ function TimetableEdit(props) {
 
   const [justOpened, setJustOpened] = useState(true);
   const [editStage, setEditStage] = useState(1);
+  const [selectAll, setSelectAll] = useState(false);
 
 
 
@@ -63,9 +65,32 @@ function TimetableEdit(props) {
     const updatedSelection = [...boxSelection];
     updatedSelection[index] = !updatedSelection[index];
     setBoxSelection(updatedSelection)
+
+    const allEqual = arr => arr.every( v => v === arr[0] )
+    if (allEqual(updatedSelection)) {
+      if (updatedSelection[0]==true) {
+        setSelectAll(true);
+        return;
+      }
+    }
+    setSelectAll(false);
+    
   };
 
+  const handleSelectAll = () => {
+      if (selectAll) {
+        setBoxSelection(new Array(boxSelection.length).fill(false))
+      }
+      else {
+        setBoxSelection(new Array(boxSelection.length).fill(true))
+      }
+      setSelectAll(!selectAll);
+  }
+
   const handleEditTimeClick = (index) => {
+    const updatedErrorTimes = [...errorTimes];
+    updatedErrorTimes[index] = false;
+    setErrorTimes(updatedErrorTimes)
     const editTimes = timeBoxes[index][0].split('-')
     if (editTimes[0].length===4) {
       setModalFirstTime("0" + editTimes[0])
@@ -215,7 +240,7 @@ function TimetableEdit(props) {
     const dataToSend = [boxIndices.map(index => summaries[index]), boxIndices.map(index => days[index]), boxIndices.map(index => times[index]), boxIndices.map(index => weeks[index]), props.startDate, props.endDate]
     
     console.log("POSTing download")
-    fetch('http://172.20.135.41:5001/createCalendarFile', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/createCalendarFile' : 'http://127.0.0.1:5000/createCalendarFile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +277,7 @@ function TimetableEdit(props) {
   const handleNextClick = () => {
     const dataToSend = [events, timeBoxes]
     console.log("POSTing recalculate times")
-    fetch('http://172.20.135.41:5001/recalculateTimes', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/recalculateTimes' : 'http://127.0.0.1:5000/recalculateTimes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +337,7 @@ function TimetableEdit(props) {
               alt = "Loading..."
             />
           </OverlayTrigger>
-          <Button key={index.toString() + "editcircle"} style={{position: 'absolute', top: (horizontalLines[item[2]]+horizontalLines[item[4]])/2-15, left: item[3]+15, zIndex:3}}  onClick={() => handleEditTimeClick(index)}  >
+          <Button key={index.toString() + "editcircle"} style={{position: 'absolute', top: (horizontalLines[item[2]]+horizontalLines[item[4]])/2-15, left: item[3]+15, zIndex:3}}  onClick={() => handleEditTimeClick(index)} variant={errorTimes[index] ? "danger" : "primary"} >
             <LuEdit2 key={index.toString() + "edit"} size="15px" color="white"/>
           </Button>
 {/*          
@@ -556,16 +581,20 @@ function TimetableEdit(props) {
   let changeButton;
   if (editStage===1) {
     changeButton = (
-      <Button style={{position:'fixed', bottom: "50px", right: "50px", zIndex:3}} onClick={handleNextClick}>
+      <Button style={{position:'fixed', bottom: "50px", right: "50px", zIndex:5}} onClick={handleNextClick}>
           Next
       </Button>
     )
   }
   else {
     changeButton = (
-      <Button style={{position:'fixed', bottom: "50px", right: "50px", zIndex:3}} onClick={handleDownloadClick}>
-          Download file
-      </Button>
+      <div>
+        <Button style={{position:'fixed', bottom: "70px", right: "50px", zIndex:5}} onClick={handleSelectAll}> {selectAll ? "Deselect All" : "Select All"}
+        </Button>
+        <Button style={{position:'fixed', bottom: "30px", right: "50px", zIndex:5}} onClick={handleDownloadClick}>
+          Download File
+        </Button>
+      </div>
     )
   }
  

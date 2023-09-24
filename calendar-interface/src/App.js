@@ -9,7 +9,17 @@ import Spinner from 'react-bootstrap/Spinner';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import InputGroup from 'react-bootstrap/InputGroup';
-
+import Stack from 'react-bootstrap/Stack';
+import 'react-18-image-lightbox/style.css';
+import Lightbox from 'react-18-image-lightbox';
+import timetable1 from "./assets/timetable1.png"
+import timetable2 from "./assets/timetable2.jpg"
+import timetable3 from "./assets/timetable3.jpg"
+import timetable4 from "./assets/timetable4.png"
+import timetable5 from "./assets/timetable5.png"
+import {AiOutlinePlus} from "react-icons/ai";
+import {BsCalendar3} from "react-icons/bs"
+import timetable6 from "./assets/timetable6.jpg"
 
 
 function App() {
@@ -29,6 +39,15 @@ function App() {
   const [horizontalLines, setHorizontalLines] = useState(null)
   const [timeBoxes, setTimeBoxes] = useState(null);
   const [timeCroppedURLs, setTimeCroppedURLs] = useState(null);
+  const [errorTimes, setErrorTimes] = useState(null);
+
+
+
+  const [timetableImgIndex, setTimetableImgIndex] = useState(0);
+  const [fullscreenTimetable, setFullscreenTimetable] = useState(false);
+  const [hoverIndex, setHoverIndex] = useState(-1);
+
+  const timetableImgs = [timetable1, timetable2, timetable3, timetable4, timetable5, timetable6]
   
 
   const handleStartDateChange = (event) => {
@@ -92,7 +111,7 @@ function App() {
     formData.append("timetableFile",uploadedFile);
     formData.append("croppedWidth", croppedWidth)
     console.log("POSTing 2")
-    fetch('http://172.20.135.41:5001/resizeImage', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/resizeImage' : 'http://127.0.0.1:5000/resizeImage', {
       method: 'POST',
       body: formData
     })
@@ -129,7 +148,7 @@ function App() {
 
     formData.append("timetableFile",uploadedFile);
     console.log("POSTing")
-    fetch('http://172.20.135.41:5001/processTimetable', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/processTimetable' : 'http://127.0.0.1:5000/processTimetable' , {
       method: 'POST',
       body: formData
     })
@@ -148,12 +167,9 @@ function App() {
       }
       else {
         setCroppedPos(data.cropped_pos)
-        // setSummaries(data.summaries)
-        // setTimes(data.times)
-        // setDays(data.days)
-        // setWeeks(data.weeks)
+        setErrorTimes(data.errorTimes)
         setEvents(data.events)
-        console.log(data.events)
+        console.log(data.errorTimes)
         setTimeBoxes(data.timeBoxes)
         setHorizontalLines(data.horizontalLines)
         getResizedImage(data.cropped_pos, data.croppedWidth, data.timeBoxes, data.horizontalLines)
@@ -167,11 +183,50 @@ function App() {
     
   }
 
-  let uploadPreview;
+  const handleTimetableImgClick = (index) => {
+    setTimetableImgIndex(index)
+    console.log(index)
+    setFullscreenTimetable(true)
+  }
+
+  const handleMouseEnter = (index) => {
+    setHoverIndex(index)
+  }
+
+  const handleMouseLeave = () => {
+    setHoverIndex(-1);
+  }
+  let uploadPreview = (
+    <div  style={{paddingTop:"30px"}}>
+      
+      <Stack direction="horizontal" style={{padding:"30px"}} gap={3} className='stack border-secondary border rounded-3 bg-secondary-subtle'>
+        {
+          timetableImgs.map((item, index) => {
+            return (
+              <div 
+                style={{position:"relative", textAlign:"center"}}
+                onMouseEnter={() => handleMouseEnter(index)}
+                onMouseLeave={handleMouseLeave}  
+                className="timetable-img" 
+                onClick={() => handleTimetableImgClick(index)}
+              >
+                <Image src={item}  width={300} />
+                {hoverIndex===index && 
+                  <div className='centered'>
+                    <AiOutlinePlus />
+                  </div>
+                }
+              </div>
+            )
+          })
+        }
+    </Stack>
+    </div>
+  )
   if (uploadedFile) {
     uploadPreview = (
       <Form.Group  style={{padding: "30px", position:"relative", textAlign:"center"}}>
-        <Image src={URL.createObjectURL(uploadedFile)} style={{opacity:(loading ? 0.5:1.0) }}fluid/>
+        <Image src={URL.createObjectURL(uploadedFile)} style={{opacity:(loading ? 0.5:1.0) }} fluid/>
         {loading &&
         <div className='centered'>
           <Spinner animation="border" variant="primary" />
@@ -218,6 +273,7 @@ function App() {
         // times={times}
         // days={days}
         // weeks={weeks}  
+        errorTimes={errorTimes}
         croppedURLs={croppedURLs}
         startDate={startDate}
         endDate={endDate}
@@ -231,39 +287,44 @@ function App() {
     currentView = (
       <div>
         <h1>Timetable to ICS</h1>
-        <Col xs={12} sm={12} md={8} lg={6} xl={6}>
-        <p >This free online timetable scanner allows you to transfer information directly from a timetable to your preferred calendar service via an ics file. Upload a PNG of JPEG to get started.</p>
-        </Col>
-        <div className='border-secondary border rounded-3 shadow bg-secondary-subtle'>
-        <Form.Group  style={{padding: "30px"}}>
-          <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
-        </Form.Group>
-        <Form.Group style={{padding: "30px"}}>
-          <Row>
-            <Col>
-              <InputGroup className="mb-3">
-                <InputGroup.Text id="basic-addon1">Start date</InputGroup.Text>
-                <Form.Control
-                  type="date"
-                  className="startDate"
-                  value={startDate}
-                  onChange={handleStartDateChange}
-                />  
-              </InputGroup>   
-            </Col>
-            <Col>
-              <InputGroup className="mb-3">
-                <InputGroup.Text id="basic-addon1">End date</InputGroup.Text>
-                <Form.Control
-                  type="date"
-                  className="endDate"
-                  value={endDate}
-                  onChange={handleEndDateChange}
-                />  
-              </InputGroup> 
-            </Col>
-          </Row>
+        <Row>
+          <Col xs={1}  style={{position:"relative", textAlign:"center", padding:"20px"}}>
+            <BsCalendar3 color="blue" style={{width:"100%", height:"100%"}}/>
+          </Col>
+          <Col xs={11} sm={11} md={8} lg={6} xl={6} style={{padding:"20px"}}>
+            <p>This free online timetable scanner allows you to transfer information directly from a timetable to your preferred calendar service via an ics file. Below are some examples of images that this program will work on. Upload a PNG of JPEG to get started.</p>
+          </Col>
+        </Row>
+        <div className='border-secondary border rounded-3 shadow bg-secondary-subtle' >
+          <Form.Group  style={{padding: "30px"}}>
+            <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
           </Form.Group>
+          <Form.Group style={{padding: "30px"}}>
+            <Row>
+              <Col>
+                <InputGroup className="mb-3">
+                  <InputGroup.Text id="basic-addon1">Start date</InputGroup.Text>
+                  <Form.Control
+                    type="date"
+                    className="startDate"
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                  />  
+                </InputGroup>   
+              </Col>
+              <Col>
+                <InputGroup className="mb-3">
+                  <InputGroup.Text id="basic-addon1">End date</InputGroup.Text>
+                  <Form.Control
+                    type="date"
+                    className="endDate"
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                  />  
+                </InputGroup> 
+              </Col>
+            </Row>
+            </Form.Group>
           </div>
           {uploadPreview}
         <Form.Group style={{padding: "30px"}}>
@@ -275,12 +336,22 @@ function App() {
 
 
   return (
-
+    <div>
+      {fullscreenTimetable && (
+        <Lightbox
+          mainSrc={timetableImgs[timetableImgIndex]}
+          nextSrc={timetableImgs[(timetableImgIndex + 1) % timetableImgs.length]}
+          prevSrc={timetableImgs[(timetableImgIndex + timetableImgs.length - 1) % timetableImgs.length]}
+          onCloseRequest={() => setFullscreenTimetable(false)}
+          onMovePrevRequest={() => setTimetableImgIndex((timetableImgIndex + timetableImgs.length - 1) % timetableImgs.length)}
+          onMoveNextRequest={() => setTimetableImgIndex((timetableImgIndex + 1) % timetableImgs.length)}
+        />
+      )}
     <Container fluid="md" style={{padding:"30px"}}>
       {currentView}
     </Container>
 
-    
+    </div>
   );
 }
 
