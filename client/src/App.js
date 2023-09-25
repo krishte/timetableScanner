@@ -111,7 +111,7 @@ function App() {
     formData.append("timetableFile",uploadedFile);
     formData.append("croppedWidth", croppedWidth)
     console.log("POSTing 2")
-    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/resizeImage' : 'http://127.0.0.1:5000/resizeImage', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:5000/resizeImage' : 'http://127.0.0.1:5000/resizeImage', {
       method: 'POST',
       body: formData
     })
@@ -148,7 +148,7 @@ function App() {
 
     formData.append("timetableFile",uploadedFile);
     console.log("POSTing")
-    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/processTimetable' : 'http://127.0.0.1:5000/processTimetable' , {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:5000/processTimetable' : 'http://127.0.0.1:5000/processTimetable' , {
       method: 'POST',
       body: formData
     })

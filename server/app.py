@@ -21,7 +21,7 @@ Calendar formats:
  - Timetable (days vertically, times horizontally)
 '''
 # Maximum separation of lines to be considered the same line
-CONST_LINE_SEPARATION = 15
+CONST_LINE_SEPARATION = 20
 # Size of kernel used to remove text
 CONST_KERNEL_SIZE = 10
 # Min slope for a line to be considered vertical
@@ -621,10 +621,10 @@ def process_timetable():
     grouped_horizontal_lines, grouped_vertical_lines = group_lines(
         raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vertical_lines)
 
-    # for y_lines in (grouped_vertical_lines+grouped_horizontal_lines):
-    #     for line in y_lines[1:]:
-    #         [[x1, y1], [x2, y2]] = line
-    #         # cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+    for y_lines in (grouped_horizontal_lines+grouped_vertical_lines):
+        for line in y_lines[1:]:
+            [[x1, y1], [x2, y2]] = line
+            cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
 
     daysrow, day_to_coord = find_days(
         gray, grouped_horizontal_lines, grouped_vertical_lines)
@@ -671,6 +671,10 @@ def process_timetable():
 
     events, web_boxes = get_events(
         boxes, day_to_col, grouped_horizontal_lines, grouped_vertical_lines, gray, not_gibberish)
+    
+    print(boxes)
+    print(grouped_horizontal_lines)
+    print(grouped_vertical_lines)
 
     for day in CONST_DAYS:
         for event in events:
@@ -693,6 +697,7 @@ def process_timetable():
     response = jsonify(success=True, horizontalLines=horizontal_lines, timeBoxes=time_boxes,
                        croppedWidth=cropped_width, cropped_pos=web_boxes, events=events, errorTimes=error_times)
 
+    #cv2.imwrite("test.png", img)
     return response
 
 @app.route('/resizeImage', methods=['POST'])
@@ -825,8 +830,8 @@ def create_calendar_file():
         mimetype='text/calendar'
     )
 
-if __name__=="__main__":
-       app.run(host='0.0.0.0', port=5000, debug=True)
+# if __name__=="__main__":
+#        app.run(host='0.0.0.0', port=5000, debug=True)
 
 # Text detection using EAST: finds bounding boxes on all words but not accurate enough
 # =============================================================================

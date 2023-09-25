@@ -240,7 +240,7 @@ function TimetableEdit(props) {
     const dataToSend = [boxIndices.map(index => summaries[index]), boxIndices.map(index => days[index]), boxIndices.map(index => times[index]), boxIndices.map(index => weeks[index]), props.startDate, props.endDate]
     
     console.log("POSTing download")
-    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/createCalendarFile' : 'http://127.0.0.1:5000/createCalendarFile', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:5000/createCalendarFile' : 'http://127.0.0.1:5000/createCalendarFile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ function TimetableEdit(props) {
   const handleNextClick = () => {
     const dataToSend = [events, timeBoxes]
     console.log("POSTing recalculate times")
-    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:443/recalculateTimes' : 'http://127.0.0.1:5000/recalculateTimes', {
+    fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:5000/recalculateTimes' : 'http://127.0.0.1:5000/recalculateTimes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

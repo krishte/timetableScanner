@@ -14,6 +14,7 @@ RUN pipenv install --system --clear
 
 COPY ./ ${SRC_DIR}/
 
-WORKDIR ${SRC_DIR}/flask_app
+EXPOSE 5000
 
-CMD ["python", "calendarScanner2.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--log-level=debug", "app:app"]
+#CMD ["python", "app.py"]
