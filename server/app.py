@@ -21,7 +21,7 @@ Calendar formats:
  - Timetable (days vertically, times horizontally)
 '''
 # Maximum separation of lines to be considered the same line
-CONST_LINE_SEPARATION = 20
+CONST_LINE_SEPARATION = 5 # Needs to be dynamically adjusted. 20 seems to be good unless lines are very close together like Raul's timetable
 # Size of kernel used to remove text
 CONST_KERNEL_SIZE = 10
 # Min slope for a line to be considered vertical
@@ -91,19 +91,19 @@ def get_lines_from_gray_img(gray):
     return (hor_lines1, hor_lines2, ver_lines1, ver_lines2)
 
 
-def group_lines(raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vertical_lines):
+def group_lines(raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vertical_lines, img):
     """Group horizontal and vertical lines by y and x coordinate respectively."""
     for line in raw_horizontal_lines:
         x1, y1, x2, y2 = line[0]
         if (x2 != x1 and abs((y2-y1)/(x2-x1)) <= CONST_MAX_SLOPE):
-            # cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
+            cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
             horizontal_lines.append(
                 [[min(x1, x2), min(y1, y2)], [max(x1, x2), max(y1, y2)]])
 
     for line in raw_vertical_lines:
         x1, y1, x2, y2 = line[0]
         if (x2 == x1 or abs((y2-y1)/(x2-x1)) >= CONST_MIN_SLOPE):
-            # cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
+            cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
             vertical_lines.append(
                 [[min(x1, x2), min(y1, y2)], [max(x1, x2), max(y1, y2)]])
 
@@ -123,7 +123,7 @@ def group_lines(raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vert
     horizontal_lines.sort()
     vertical_lines = sorted(vertical_lines, key=lambda x: x[0][1])
 
-    # Could keep track of (y1,y2) at start of each list but only works if lines are really flat?
+    # Could keep track of range (y1,y2) at start of each list but only works if lines are really flat?
     # A list of lists where each nested list contains a y coordinate followed by all lines at that y coordinate (for grouped_horizontal_lines)
     grouped_horizontal_lines, grouped_vertical_lines = [], []
     for line in horizontal_lines:
@@ -224,8 +224,9 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
         end_vert_line = grouped_vertical_lines[i+1][0]
         intersecting_horizontal_lines = [
             grouped_horizontal_lines[daysrow+1][0]]
+        print(grouped_vertical_lines[i][-1][1][1])
         for group in grouped_horizontal_lines[daysrow+2:]:
-            if (group[0] > CONST_LINE_SEPARATION + grouped_vertical_lines[i][-1][1][1]):
+            if (group[0] > (CONST_KERNEL_SIZE+5) + grouped_vertical_lines[i+1][-1][1][1]):
                 break
             for line in group[1:]:
                 if (start_vert_line >= line[0][0]-CONST_OVERLAP_THRESHOLD
@@ -241,7 +242,7 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
         intersecting_horizontal_lines.sort()
         new_intersecting_horizontal_lines = intersecting_horizontal_lines[0:1]
         for val in intersecting_horizontal_lines[1:]:
-            if (abs(val-new_intersecting_horizontal_lines[-1]) > CONST_LINE_SEPARATION):
+            if (abs(val-new_intersecting_horizontal_lines[-1]) > (CONST_KERNEL_SIZE+5)):
                 new_intersecting_horizontal_lines.append(val)
         intersecting_horizontal_lines = new_intersecting_horizontal_lines
         print(grouped_horizontal_lines[daysrow+1][0], intersecting_horizontal_lines)
@@ -258,14 +259,16 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
             print(j, vert_line_index)
             if (vert_line_index==-1):
                 vert_line_index = i+1          
-
-            thresh2 = cv2.threshold(gray[intersecting_horizontal_lines[j]:intersecting_horizontal_lines[j+1], grouped_vertical_lines[i]
-                                    [0]:grouped_vertical_lines[vert_line_index][0]], 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
+            
+            #Shrunk box by three on each side to ensure thresholding works well i.e. doesn't include border lines
+            thresh2 = cv2.threshold(gray[intersecting_horizontal_lines[j]+3:intersecting_horizontal_lines[j+1]-3, grouped_vertical_lines[i]
+                                    [0]+3:grouped_vertical_lines[vert_line_index][0]-3], 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
             blur2 = cv2.GaussianBlur(thresh2, (3, 3), 0)
 
             #cv2.imshow(str(j), gray[intersecting_horizontal_lines[j]:intersecting_horizontal_lines[j+1], grouped_vertical_lines[i][0]:(grouped_vertical_lines[i+1][0] if vert_line_found else grouped_vertical_lines[-1][0])])
             d = pytesseract.image_to_data(
                 blur2, output_type=Output.DICT, config='--psm 6')
+            print(d['text'])
             n_boxes = len(d['text'])
             for k in range(n_boxes):
                 if (int(d['conf'][k]) >= 0 and d['text'][k].strip() != ""):
@@ -280,10 +283,10 @@ def find_times(gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow):
         if timescol != -1:
             break
     print(times_col_boxes)
-    return (timescol, times_col_boxes)
+    return (timescol, times_col_boxes, intersecting_horizontal_lines)
 
 
-def process_times(times_col_boxes, grouped_horizontal_lines, grouped_vertical_lines, timescol, find_closest_line, not_gibberish):
+def process_times(times_col_boxes, grouped_horizontal_lines, grouped_vertical_lines, timescol, find_closest_line, not_gibberish, intersecting_horizontal_lines):
     # group time boxes with same horizontal coordinate
     times_col_grouped_boxes = [times_col_boxes[0]]
     for (text, (y1, y2)) in times_col_boxes[1:]:
@@ -308,22 +311,22 @@ def process_times(times_col_boxes, grouped_horizontal_lines, grouped_vertical_li
         vert_sep_threshold += val[1][1] - val[1][0] + 5
     vert_sep_threshold /= len(times_col_grouped_boxes)
 
-    def is_contained_in_horizontal_line(point, index):
-        for [[x1, y1], [x2, y2]] in grouped_horizontal_lines[index][1:]:
-            if point >= x1 and point <= x2:
-                return True
-        return False
-
-    # Group text boxes whose y values differ by at most the size of the average text box i.e. they have less than a line spacing between them
+    def find_closest_intersecting_line(coord, intersecting_lines):
+        index = 0
+        minval = abs(intersecting_lines[0]-coord)
+        for i, line in enumerate(intersecting_lines):
+            if (abs(line-coord) < minval):
+                minval = abs(line-coord)
+                index = i
+        return index
+    # Group text boxes whose y values differ by at most the size of the average text box i.e. they have less than a line spacing between them and don't have a line between them
     times = [times_col_grouped_boxes[0]]
     for (text, (y1, y2)) in times_col_grouped_boxes[1:]:
-        closest_line_index = find_closest_line(
-            (y1+times[-1][1][1])/2, grouped_horizontal_lines)
-        closest_line = grouped_horizontal_lines[closest_line_index][0]
+        closest_line_index = find_closest_intersecting_line(
+            (y1+times[-1][1][1])/2, intersecting_horizontal_lines)
+        closest_line = intersecting_horizontal_lines[closest_line_index]
         if (abs(y1-times[-1][1][1]) <= vert_sep_threshold and
-            (not (closest_line >= times[-1][1][1]-10 and closest_line <= y1+10 and
-                  is_contained_in_horizontal_line((grouped_vertical_lines[timescol][0] +
-                                                   grouped_vertical_lines[timescol+1][0])/2, closest_line_index)))):
+            (not (closest_line >= times[-1][1][1]-10 and closest_line <= y1+10))):
             times[-1][0] += " " + text
             times[-1][1][1] = y2
         else:
@@ -353,7 +356,10 @@ def parse_times(times):
                     if (not c.isalpha() and c != ' '):
                         num_time += c
                 hours, minutes = "", ""
-                if (len([c for c in num_time if not c.isdigit()]) == 0):
+                if (len([c for c in num_time if not c.isdigit()]) == 0 and len(num_time)==4):
+                    hours = num_time[:2]
+                    minutes = num_time[2:]
+                elif (len([c for c in num_time if not c.isdigit()]) == 0):
                     hours = num_time
                     minutes = "00"
                 else:
@@ -425,7 +431,11 @@ def parse_times(times):
     #flag times that start before the previous time ends or where the second time occurs before the first
     error_times = []
     for i in range(len(times)):
+        [h1,m1] = times[i][0][0].split(':')
+        [h2,m2] = times[i][0][1].split(':')
         if (times[i][0][0] == "Empty" or times[i][0][1] == "Empty"):
+            error_times.append(True)
+        elif (len(h1) > 2 or len(h2) > 2 or len(m1) != 2 or len(m2) != 2 or int(h1) >= 24 or int(h2) >= 24 or int(m1) >= 60 or int(m2)>=60):
             error_times.append(True)
         elif (i > 0 and is_time_smaller(times[i][0][0], times[i-1][0][1])) or is_time_smaller(times[i][0][1], times[i][0][0]):
             error_times.append(True)
@@ -449,22 +459,48 @@ def find_day_cols(day_to_coord, grouped_vertical_lines, timescol, find_closest_l
     return day_to_col
 
 
-def find_time_rows(times, grouped_horizontal_lines, daysrow, find_closest_line):
+def find_time_rows(times, grouped_horizontal_lines, daysrow, find_closest_line, intersecting_horizontal_lines):
     time_to_row = {}
     lastrow = daysrow+1
+    
+    def find_closest_intersecting_line(coord, intersecting_lines):
+        index = 0
+        minval = abs(intersecting_lines[0]-coord)
+        for i, line in enumerate(intersecting_lines):
+            if (abs(line-coord) < minval):
+                minval = abs(line-coord)
+                index = i
+        return index
+    
     for i in range(len(times)-1):
-        newrow = find_closest_line(
-            (times[i][1][0]+times[i][1][1]+times[i+1][1][0]+times[i+1][1][1])/4, grouped_horizontal_lines)
+        newrow = find_closest_intersecting_line((times[i][1][0]+times[i][1][1]+times[i+1][1][0]+times[i+1][1][1])/4, intersecting_horizontal_lines)
+        if (intersecting_horizontal_lines[newrow] < times[i][1][1] or intersecting_horizontal_lines[newrow] > times[i+1][1][0]):
+            newrow = find_closest_line(
+                (times[i][1][0]+times[i][1][1]+times[i+1][1][0]+times[i+1][1][1])/4, grouped_horizontal_lines)
+        else:
+            newrow = find_closest_line(intersecting_horizontal_lines[newrow], grouped_horizontal_lines)
         time_to_row[times[i][0]] = (lastrow, newrow)
         lastrow = newrow
-    last_hor_line = find_closest_line(
-        times[-1][1][1]+10, grouped_horizontal_lines)
-    if (last_hor_line == lastrow):
-        time_to_row[times[-1][0]] = (lastrow, lastrow+1)
-    elif (grouped_horizontal_lines[last_hor_line][0] <= times[-1][1][1]):
-        time_to_row[times[-1][0]] = (lastrow, last_hor_line+1)
+        
+    last_hor_line = intersecting_horizontal_lines[-1]
+    if last_hor_line < times[-1][1][1]:
+        last_hor_line = find_closest_line(
+            times[-1][1][1]+10, grouped_horizontal_lines)
+        if (last_hor_line == lastrow):
+            time_to_row[times[-1][0]] = (lastrow, lastrow+1)
+        elif (grouped_horizontal_lines[last_hor_line][0] <= times[-1][1][1]):
+            time_to_row[times[-1][0]] = (lastrow, last_hor_line+1)
+        else:
+            time_to_row[times[-1][0]] = (lastrow, last_hor_line)
     else:
-        time_to_row[times[-1][0]] = (lastrow, last_hor_line)
+        last_hor_line = find_closest_line(
+            last_hor_line, grouped_horizontal_lines)
+        if (last_hor_line == lastrow):
+            time_to_row[times[-1][0]] = (lastrow, lastrow+1)
+        elif (grouped_horizontal_lines[last_hor_line][0] <= times[-1][1][1]):
+            time_to_row[times[-1][0]] = (lastrow, last_hor_line+1)
+        else:
+            time_to_row[times[-1][0]] = (lastrow, last_hor_line)
 
     return time_to_row
 
@@ -619,12 +655,12 @@ def process_timetable():
         [[0, 0], [0, img.shape[0]]],  [[img.shape[1], 0], [img.shape[1], img.shape[0]]]]
 
     grouped_horizontal_lines, grouped_vertical_lines = group_lines(
-        raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vertical_lines)
+        raw_horizontal_lines, raw_vertical_lines, horizontal_lines, vertical_lines, img)
 
-    for y_lines in (grouped_horizontal_lines+grouped_vertical_lines):
-        for line in y_lines[1:]:
-            [[x1, y1], [x2, y2]] = line
-            cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+    # for y_lines in (grouped_horizontal_lines+grouped_vertical_lines):
+    #     for line in y_lines[1:]:
+    #         [[x1, y1], [x2, y2]] = line
+    #         cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
 
     daysrow, day_to_coord = find_days(
         gray, grouped_horizontal_lines, grouped_vertical_lines)
@@ -633,7 +669,7 @@ def process_timetable():
     if (daysrow == -1):
         return jsonify(success=False, error="Could not find any days in the image")
 
-    timescol, times_col_boxes = find_times(
+    timescol, times_col_boxes, intersecting_horizontal_lines = find_times(
         gray, grouped_horizontal_lines, grouped_vertical_lines, daysrow)
 
     if (timescol == -1):
@@ -653,14 +689,14 @@ def process_timetable():
         return index
 
     times = process_times(times_col_boxes, grouped_horizontal_lines,
-                          grouped_vertical_lines, timescol, find_closest_line, not_gibberish)
+                          grouped_vertical_lines, timescol, find_closest_line, not_gibberish, intersecting_horizontal_lines)
     times, error_times = parse_times(times)
     print(error_times)
 
     day_to_col = find_day_cols(
         day_to_coord, grouped_vertical_lines, timescol, find_closest_line)
     time_to_row = find_time_rows(
-        times, grouped_horizontal_lines, daysrow, find_closest_line)
+        times, grouped_horizontal_lines, daysrow, find_closest_line, intersecting_horizontal_lines)
 
     print(time_to_row)
 
@@ -697,7 +733,7 @@ def process_timetable():
     response = jsonify(success=True, horizontalLines=horizontal_lines, timeBoxes=time_boxes,
                        croppedWidth=cropped_width, cropped_pos=web_boxes, events=events, errorTimes=error_times)
 
-    #cv2.imwrite("test.png", img)
+    cv2.imwrite("test.png", img)
     return response
 
 @app.route('/resizeImage', methods=['POST'])
@@ -720,19 +756,31 @@ def resize_image():
 def recalculate_times():
     
     results = request.get_json()
-    events, time_rows = results[0], results[1]
+    events, time_rows, horizontal_lines = results[0], results[1], results[2]
     time_rows = [(x[0], (x[2], x[4])) for x in time_rows]
-
-    def compute_half(timepair):
+    
+    def time_dif_mins(timepair):
         [h1, m1] = [int(x) for x in timepair[0].split(':')]
         [h2, m2] = [int(x) for x in timepair[1].split(':')]
-        half = int(((h2-h1)*60+m2-m1)/2)
-        h_str = str(int((m1+half)/60 + h1) % 24)
-        m_str = str((m1+half) % 60)
-        if (len(m_str) == 1):
-            m_str = "0" + m_str
-        return h_str + ":" + m_str
-
+        return (h2-h1)*60+m2-m1
+    
+    def addMins(mins, time):
+        [h1, m1] = [int(x) for x in time.split(':')]
+        m1 += mins
+        h1 += m1//60
+        m1 %= 60
+        m1 = str(m1)
+        if (len(m1) == 1):
+            return str(h1)+":0" + m1
+        else:
+            return str(h1)+":"+m1
+    
+    def compute_time(timepair, start_line, end_line, event_line):
+        time_from_start = int(round((event_line-start_line)/(end_line-start_line)/0.25)/4*time_dif_mins(timepair))
+        print(time_from_start)
+        print(timepair,addMins(time_from_start, timepair[0]) )
+        return addMins(time_from_start, timepair[0])
+    
     new_events = []
     for event in events:
         timelist = []
@@ -743,9 +791,9 @@ def recalculate_times():
             if (i <= start and end <= j):
                 timelist.append(time)
             elif (i > start and i < end):
-                timelist.append((compute_half(time), time[1]))
+                timelist.append((compute_time(time, horizontal_lines[start], horizontal_lines[end], horizontal_lines[i]), time[1]))
             elif (j > start and j < end):
-                timelist.append((time[0], compute_half(time)))
+                timelist.append((time[0], compute_time(time,  horizontal_lines[start], horizontal_lines[end], horizontal_lines[j])))
         if (timelist != []):
             new_events.append(event)
             new_events[-1][2] = (timelist[0][0], timelist[-1][1])
@@ -831,7 +879,7 @@ def create_calendar_file():
     )
 
 # if __name__=="__main__":
-#        app.run(host='0.0.0.0', port=5000, debug=True)
+#     app.run(host='0.0.0.0', port=5000, debug=True)
 
 # Text detection using EAST: finds bounding boxes on all words but not accurate enough
 # =============================================================================

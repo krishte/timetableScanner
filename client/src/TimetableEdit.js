@@ -56,6 +56,7 @@ function TimetableEdit(props) {
   const [editIndex, setEditIndex] = useState(null);
 
   const [justOpened, setJustOpened] = useState(true);
+  const [justOpened2, setJustOpened2] = useState(false);
   const [editStage, setEditStage] = useState(1);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -200,6 +201,13 @@ function TimetableEdit(props) {
     }, 100);
   }
 
+  const handleModalClose2 = () => {
+    setShow(false)
+    setTimeout(() => {
+      setJustOpened2(false);
+    }, 100)
+  }
+
   const handleMouseEnter = (index) => {
     setHoveredIndex(index);
   };
@@ -275,7 +283,7 @@ function TimetableEdit(props) {
   }
 
   const handleNextClick = () => {
-    const dataToSend = [events, timeBoxes]
+    const dataToSend = [events, timeBoxes, horizontalLines]
     console.log("POSTing recalculate times")
     fetch(process.env.NODE_ENV === 'production' ? 'http://timetablescan.com:5000/recalculateTimes' : 'http://127.0.0.1:5000/recalculateTimes', {
         method: 'POST',
@@ -294,6 +302,8 @@ function TimetableEdit(props) {
         setTimes(data.times)
         setDays(data.days)
         setWeeks(data.weeks)
+        setJustOpened2(true)
+        setShow(true);
         setEditStage(2);
     })
     .catch(err => {
@@ -400,6 +410,44 @@ function TimetableEdit(props) {
             <Col xs={3} style={{textAlign:"center"}}>
               <GiArrowCursor size="40px" />
             </Col>
+            <Col>Hover over the times on the left to see the times information found in that box</Col>
+          </Row>
+          <Row style={{padding:"20px"}}>
+            <Col xs={3} style={{textAlign:"center"}}>
+              <Button style={{textAlign: "center"}} variant="danger" size="40px">
+                <LuEdit2 />
+              </Button>
+            </Col>
+            <Col>A red edit button indicates an issue with the times in that box. Please edit these.</Col>
+          </Row>
+          <Row style={{padding:"20px"}} >
+            <Col xs={3} style={{textAlign:"center"}}>
+              <Button>
+                  Next
+              </Button>
+            </Col>
+            <Col>Quickly check all the times found and then click the next button to continue to the next stage.</Col>
+          </Row>
+
+        <Modal.Footer>
+          <Button variant="primary" onClick={handleModalClose}>
+            OK
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+  else if (justOpened2) {
+    modalContent = (
+      <Modal show={show} onHide={handleModalClose2}>
+        
+        <Modal.Header>
+          <Modal.Title>Instructions</Modal.Title>
+        </Modal.Header>
+          <Row style={{padding:"20px"}}>
+            <Col xs={3} style={{textAlign:"center"}}>
+              <GiArrowCursor size="40px" />
+            </Col>
             <Col>Hover over an event to see the information found for that event</Col>
           </Row>
           <Row style={{padding:"20px"}}>
@@ -418,7 +466,7 @@ function TimetableEdit(props) {
           </Row>
 
         <Modal.Footer>
-          <Button variant="primary" onClick={handleModalClose}>
+          <Button variant="primary" onClick={handleModalClose2}>
             OK
           </Button>
         </Modal.Footer>
@@ -581,14 +629,28 @@ function TimetableEdit(props) {
   let changeButton;
   if (editStage===1) {
     changeButton = (
-      <Button style={{position:'fixed', bottom: "50px", right: "50px", zIndex:5}} onClick={handleNextClick}>
-          Next
-      </Button>
+      <div>
+        <Button style={{position:'fixed', top: "30px", right: "50px", zIndex:5}} variant="info" onClick={() => {
+          setJustOpened(true);
+          setShow(true);
+        }}>
+            Instructions
+        </Button>
+        <Button style={{position:'fixed', bottom: "30px", right: "50px", zIndex:5}} onClick={handleNextClick}>
+            Next
+        </Button>
+      </div>
     )
   }
   else {
     changeButton = (
       <div>
+        <Button style={{position:'fixed', top: "30px", right: "50px", zIndex:5}} variant="info" onClick={() => {
+          setJustOpened2(true);
+          setShow(true);
+        }}>
+            Instructions
+        </Button>
         <Button style={{position:'fixed', bottom: "70px", right: "50px", zIndex:5}} onClick={handleSelectAll}> {selectAll ? "Deselect All" : "Select All"}
         </Button>
         <Button style={{position:'fixed', bottom: "30px", right: "50px", zIndex:5}} onClick={handleDownloadClick}>

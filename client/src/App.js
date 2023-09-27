@@ -62,6 +62,7 @@ function App() {
     setUploadedFile(event.target.files[0]);
   };
 
+
   const cropImage = async (src, x, y, width, height) => {
     return new Promise((resolve, reject) => {
       const image = document.createElement('img');
@@ -199,7 +200,7 @@ function App() {
   let uploadPreview = (
     <div  style={{paddingTop:"30px"}}>
       
-      <Stack direction="horizontal" style={{padding:"30px"}} gap={3} className='stack border-secondary border rounded-3 bg-secondary-subtle'>
+      <Stack direction="horizontal" style={{padding:"30px"}} gap={3} className='stack rounded-3 bg-secondary-subtle'>
         {
           timetableImgs.map((item, index) => {
             return (
@@ -288,14 +289,14 @@ function App() {
       <div>
         <h1>Timetable to ICS</h1>
         <Row>
-          <Col xs={1}  style={{position:"relative", textAlign:"center", padding:"20px"}}>
+          <Col xs={3} sm={3}  md={3} lg={2} xl={1} style={{position:"relative", textAlign:"center", padding:"20px"}}>
             <BsCalendar3 color="blue" style={{width:"100%", height:"100%"}}/>
           </Col>
-          <Col xs={11} sm={11} md={8} lg={6} xl={6} style={{padding:"20px"}}>
-            <p>This free online timetable scanner allows you to transfer information directly from a timetable to your preferred calendar service via an ics file. Below are some examples of images that this program will work on. Upload a PNG of JPEG to get started.</p>
+          <Col xs={11} sm={11} md={8} lg={9} xl={8} style={{padding:"20px"}}>
+            <p>This free online timetable scanner allows you to transfer information directly from a timetable to your preferred calendar service via an ics file. Below are some examples of images that this program will work on. For the best result, your timetable should have a similar format to the given examples i.e. a column containing times on the left and a row containing days at the top. Upload a PNG or JPEG to get started.</p>
           </Col>
         </Row>
-        <div className='border-secondary border rounded-3 shadow bg-secondary-subtle' >
+        <div className=' rounded-3 shadow bg-secondary-subtle' >
           <Form.Group  style={{padding: "30px"}}>
             <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
           </Form.Group>

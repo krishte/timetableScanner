@@ -45,6 +45,7 @@
   transform: scale(1.05);
   z-index: 1;
   transition: 0.2s ease-in-out;
+  outline: 2px solid black;
 }
 
 .edit-button:hover {
@@ -72,13 +73,3 @@
   width: 100%;
 }
 
-.timetable-img {
-  opacity: 1;
-  transition: 0.2s ease-in-out;
-}
-
-.timetable-img:hover {
-  opacity: 0.5;
-  transition: 0.2s ease-in-out;
-  transform: scale(1.05);
-}
