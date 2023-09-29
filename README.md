@@ -11,10 +11,10 @@ A full-stack application that scans a timetable uploaded as an image file and pr
 For ease of transferability, the server side is packaged with Docker. Therefore, please ensure you have Docker installed before continuing. The Dockerfile uses pipenv and the Pipfile to install all required dependencies.
 
 In the server directory, run the following commands to build the Docker image and run it in a container:
-'''
+```
 docker build -t timetable-scanner .
 docker run --rm -p 5000:5000 timetable-scanner
-'''
+```
 Note that 'timetable-scanner' is the name of the image and this can be replaced with anything. The server is currently set to run on port 5000, but this can be changed by altering the port mapping in the 'docker run' command.
 
 ### Client
@@ -22,7 +22,7 @@ Note that 'timetable-scanner' is the name of the image and this can be replaced 
 Please install both Node and npm before continuing. The application currently runs with node version 18.16.0 and npm version 9.8.1.
 
 In the client directory, run the following commands to install all packages and start a development server:
-'''
+```
 npm install
 npm start
-'''
+```
