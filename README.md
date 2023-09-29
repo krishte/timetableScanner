@@ -47,3 +47,5 @@ The following is a high-level overview of how the React client code works:
   - This step helps to improve the accuracy of finding the times for each event and proved necessary when Tesseract seemed to struggle with certain fonts
 - After editing the times, all the events found by the application are overlayed onto the original timetable image, and the user can hover over each event to see the event details found and set by the program.
 - The user can edit these details and then select which events to include in the ICS file before downloading it.
+
+![Client-1](https://github.com/krishte/timetableScanner/assets/46422100/573c6f30-ca91-424f-a713-5019a06bf09e)
