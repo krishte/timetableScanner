@@ -11,10 +11,12 @@ A full-stack application that scans a timetable uploaded as an image file and pr
 For ease of transferability, the server side is packaged with Docker. Therefore, please ensure you have Docker installed before continuing. The Dockerfile uses pipenv and the Pipfile to install all required dependencies.
 
 In the server directory, run the following commands to build the Docker image and run it in a container:
+
 ```
 docker build -t timetable-scanner .
 docker run --rm -p 5000:5000 timetable-scanner
 ```
+
 Note that 'timetable-scanner' is the name of the image and this can be replaced with anything. The server is currently set to run on port 5000, but this can be changed by altering the port mapping in the 'docker run' command.
 
 ### Client
@@ -22,10 +24,12 @@ Note that 'timetable-scanner' is the name of the image and this can be replaced 
 Please install both Node and npm before continuing. The application currently runs with Node version 18.16.0 and npm version 9.8.1.
 
 In the client directory, run the following commands to install all packages and start a development server:
+
 ```
 npm install
 npm start
 ```
+
 Depending on the location of the server, you may need to change the links for all the POST requests made in App.js and TimetableEdit.js.
 
 ## Overview
@@ -48,6 +52,6 @@ The following is a high-level overview of how the React client code works:
 - After editing the times, all the events found by the application are overlayed onto the original timetable image, and the user can hover over each event to see the event details found and set by the program.
 - The user can edit these details and then select which events to include in the ICS file before downloading it.
 
-![Client-1](https://github.com/krishte/timetableScanner/assets/46422100/573c6f30-ca91-424f-a713-5019a06bf09e)
-![Client-2](https://github.com/krishte/timetableScanner/assets/46422100/4db72594-0435-4b95-912d-a2961fc299ff)
-![Client-3](https://github.com/krishte/timetableScanner/assets/46422100/c9c556e2-fcfb-4347-87f8-5b36d2bc7e8e)
+| Home Page | Edit Times | Select Events |
+| ------------- | ------------- | ------------- |
+|![Client-1](https://github.com/krishte/timetableScanner/assets/46422100/573c6f30-ca91-424f-a713-5019a06bf09e)|![Client-2](https://github.com/krishte/timetableScanner/assets/46422100/4db72594-0435-4b95-912d-a2961fc299ff)|![Client-3](https://github.com/krishte/timetableScanner/assets/46422100/c9c556e2-fcfb-4347-87f8-5b36d2bc7e8e)|
