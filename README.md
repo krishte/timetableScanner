@@ -17,7 +17,7 @@ docker build -t timetable-scanner .
 docker run --rm -p 5000:5000 timetable-scanner
 ```
 
-Note that 'timetable-scanner' is the name of the image and this can be replaced with anything. The server is currently set to run on port 5000, but this can be changed by altering the port mapping in the 'docker run' command.
+Note that `timetable-scanner` is the name of the image and this can be replaced with anything. The server is currently set to run on port 5000, but this can be changed by altering the port mapping in the `docker run` command.
 
 ### Client
 
@@ -30,7 +30,7 @@ npm install
 npm start
 ```
 
-Depending on the location of the server, you may need to change the links for all the POST requests made in App.js and TimetableEdit.js.
+Depending on the location of the server, you may need to change the links for all the POST requests made in `App.js` and `TimetableEdit.js`.
 
 ## Overview
 ### Server
