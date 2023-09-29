@@ -49,3 +49,5 @@ The following is a high-level overview of how the React client code works:
 - The user can edit these details and then select which events to include in the ICS file before downloading it.
 
 ![Client-1](https://github.com/krishte/timetableScanner/assets/46422100/573c6f30-ca91-424f-a713-5019a06bf09e)
+![Client-2](https://github.com/krishte/timetableScanner/assets/46422100/4db72594-0435-4b95-912d-a2961fc299ff)
+![Client-3](https://github.com/krishte/timetableScanner/assets/46422100/c9c556e2-fcfb-4347-87f8-5b36d2bc7e8e)
